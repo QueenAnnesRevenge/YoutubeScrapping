@@ -53,7 +53,6 @@ print("----")
 ## id video 
 id = soup.find("meta", {"itemprop" : "videoId"})
 print("ID:",id["content"])
-
 print('###')
 
 driver.quit()

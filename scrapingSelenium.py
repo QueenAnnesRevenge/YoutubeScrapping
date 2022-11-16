@@ -4,6 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
 import time
 import packaging
 import re 
@@ -32,6 +33,10 @@ def getAuthor(soup):
 
 def getLikes(soup):
     raw_like = soup.find('button', {'class': 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--segmented-start'})
+    while raw_like==None :
+        time.sleep(2)
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        raw_like = soup.find('button', {'class': 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--segmented-start'})
     return(raw_like["aria-label"])
     #soup.find("span", {"class" : "like-button-renderer"}).text
     #print(raw_like["aria-label"])
@@ -41,8 +46,11 @@ def getLikes(soup):
 
 
 def getDescription(soup):
-    element = driver.find_element(By.XPATH, "//*[@id=\"content\"]/div[2]/div[6]/div[1]/ytd-button-renderer[1]/yt-button-shape/button/yt-touch-feedback-shape/div/div[2]")
-    element.click()
+    try:
+        element = driver.find_element(By.XPATH, "//*[@id=\"content\"]/div[2]/div[6]/div[1]/ytd-button-renderer[1]/yt-button-shape/button/yt-touch-feedback-shape/div/div[2]")
+        element.click()
+    except NoSuchElementException:
+        pass
     element = driver.find_element(By.XPATH, "//*[@id=\"expand\"]")
     element.click()
     time.sleep(1)
@@ -84,8 +92,14 @@ def getComs(soup):
 
 
 def main():
+    
+    with open("input.json", 'r') as f:
+        inputs = json.load(f)        
+        
     file = open("input.json")
     data=json.load(file)
+    
+    dictionnaryList = {'dictionnary': []}
     
     for id in data['videos_id']:
         driver.get("https://www.youtube.com/watch?v=" + id)
@@ -110,17 +124,21 @@ def main():
         print('###')
         
         dictionnary = {
-            "title": title,
-            "author": author,
-            "likes": likes,
-            "description": description,
-            "coms": coms
-            }
+        "title": title,
+        "author": author,
+        "likes": likes,
+        "description": description,
+        "coms": coms
+        }
+        dictionnaryList['dictionnary'].append(dictionnary)
+        
+    with open("output.json", 'w') as f:
+        f.write(json.dumps(dictionnaryList, indent=4))
     
-    return
+    driver.quit()
 
 
 if __name__ == "__main__":
     main()
 
-driver.quit()
+

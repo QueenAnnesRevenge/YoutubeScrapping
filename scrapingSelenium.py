@@ -7,9 +7,9 @@ from selenium.webdriver.common.by import By
 import time
 import packaging
 import re 
-import _json
+import json
 
-N = 3 #n+1
+N = 2 #n
 
 s=Service(ChromeDriverManager().install())
 options = Options()
@@ -17,71 +17,100 @@ options.add_argument('--headless')
 options.add_argument('--disable-gpu')
 driver = webdriver.Chrome(service=s, chrome_options=options)
 
-url = "https://www.youtube.com/watch?v=LPpqcvIlrhQ"
-driver.get(url)
-time.sleep(2)
-soup = BeautifulSoup(driver.page_source, 'html.parser')
 
-## title
-title = soup.find("meta", {"name" : "title"})["content"]
-print("###")
-print("Title:", title)
-print("----")
+def getTitle(soup):
+    title = soup.find("meta", {"name" : "title"})["content"]
+    return(title)
+    #print("Title:", title)
+    
 
-## author 
-author = soup.find("link", {"itemprop" : "name"})["content"]
-print("Author:", author)
-print("----")
+def getAuthor(soup): 
+    author = soup.find("link", {"itemprop" : "name"})["content"]
+    return(author)
+    #print("Author:", author)
+   
 
-## pocebleu (views pr l'instant)
-raw_like = soup.find('button', {'class': 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--segmented-start'})
-#soup.find("span", {"class" : "like-button-renderer"}).text
-print(raw_like["aria-label"])
-
+def getLikes(soup):
+    raw_like = soup.find('button', {'class': 'yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m yt-spec-button-shape-next--icon-leading yt-spec-button-shape-next--segmented-start'})
+    return(raw_like["aria-label"])
+    #soup.find("span", {"class" : "like-button-renderer"}).text
+    #print(raw_like["aria-label"])
 
 ##.find_all(re.compile("^[1-9](,[1-9])*$"))
 
-print("----")
-
-## description
-element = driver.find_element(By.XPATH, "//*[@id=\"content\"]/div[2]/div[6]/div[1]/ytd-button-renderer[1]/yt-button-shape/button/yt-touch-feedback-shape/div/div[2]")
-element.click()
-element = driver.find_element(By.XPATH, "//*[@id=\"expand\"]")
-element.click()
-time.sleep(1)
-soup = BeautifulSoup(driver.page_source, 'html.parser')
-descDiv = soup.find("yt-formatted-string", {"class": "style-scope ytd-text-inline-expander"})
-if "is-expanded" in descDiv:
-    print('ui')
-print(descDiv.text)
-print("----")
-
-## links in Description
-##for a in descDiv(soup.findall('href'))
-print("----")
 
 
-## id video 
-id = soup.find("meta", {"itemprop" : "videoId"})
-print("ID:",id["content"])
-print("----")
-
-
-## coms
-#Commentaires
-commentaires = []
-element = driver.find_element(By.XPATH, "//*[@id=\"comments\"]")
-driver.execute_script("arguments[0].scrollIntoView();", element)
-soup = BeautifulSoup(driver.page_source, 'html.parser')
-commentsList = soup.find_all("ytd-comment-thread-renderer", {"class": "style-scope ytd-item-section-renderer"}, limit = N)
-while commentsList == []:
+def getDescription(soup):
+    element = driver.find_element(By.XPATH, "//*[@id=\"content\"]/div[2]/div[6]/div[1]/ytd-button-renderer[1]/yt-button-shape/button/yt-touch-feedback-shape/div/div[2]")
+    element.click()
+    element = driver.find_element(By.XPATH, "//*[@id=\"expand\"]")
+    element.click()
     time.sleep(1)
     soup = BeautifulSoup(driver.page_source, 'html.parser')
-    commentsList = soup.find_all("ytd-comment-thread-renderer", {"class": "style-scope ytd-item-section-renderer"}, limit = N)
-for comment in commentsList:
-    commentaires.append(comment.find("yt-formatted-string", {"id": "content-text"}).text)
-print(commentaires)
+    descDiv = soup.find("yt-formatted-string", {"class": "style-scope ytd-text-inline-expander"})
+    if "is-expanded" in descDiv:
+        print('ui')
+    return(descDiv.text)
+    #print(descDiv.text)
+    
 
-print('###')
+def getLinks(soup):
+    ##for a in descDiv(soup.findall('href'))
+    #return(links)
+    print("----")
+    
+
+
+def getId_video(soup):
+    id = soup.find("meta", {"itemprop" : "videoId"})
+    return(id)
+    ##print("ID:",id["content"])
+
+
+def getComs(soup):
+    commentaires = []
+    element = driver.find_element(By.XPATH, "//*[@id=\"comments\"]")
+    driver.execute_script("arguments[0].scrollIntoView();", element)
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    commentsList = soup.find_all("ytd-comment-thread-renderer", {"class": "style-scope ytd-item-section-renderer"}, limit = N)
+    while commentsList == []:
+        time.sleep(1)
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        commentsList = soup.find_all("ytd-comment-thread-renderer", {"class": "style-scope ytd-item-section-renderer"}, limit = N)
+    for comment in commentsList:
+        commentaires.append(comment.find("yt-formatted-string", {"id": "content-text"}).text)
+    return(commentaires)
+    ##print(commentaires)
+
+
+def main():
+    file = open("input.json")
+    data=json.load(file)
+    
+    for id in data['videos_id']:
+        driver.get("https://www.youtube.com/watch?v=" + id)
+        
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        time.sleep(2)
+               
+        title = getTitle(soup)
+        author = getAuthor(soup)
+        likes = getLikes(soup)
+        description = getDescription(soup)
+        coms = getComs(soup)
+        
+        print('###')
+        print(title, '\n----')
+        print(author, '\n----')
+        print(likes, '\n----')
+        print(description, '\n----')
+        print(coms, '\n----')
+        print('###')
+    
+    return
+
+
+if __name__ == "__main__":
+    main()
 
 driver.quit()

@@ -97,6 +97,7 @@ def main():
         author = getAuthor(soup)
         likes = getLikes(soup)
         description = getDescription(soup)
+        links = getLinks(soup)
         coms = getComs(soup)
         
         print('###')
@@ -104,8 +105,17 @@ def main():
         print(author, '\n----')
         print(likes, '\n----')
         print(description, '\n----')
+        print(links, '¬----')
         print(coms, '\n----')
         print('###')
+        
+        dictionnary = {
+            "title": title,
+            "author": author,
+            "likes": likes,
+            "description": description,
+            "coms": coms
+            }
     
     return
 

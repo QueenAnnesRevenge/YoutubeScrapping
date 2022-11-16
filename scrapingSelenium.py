@@ -9,6 +9,8 @@ import packaging
 import re 
 import _json
 
+N = 3 #n+1
+
 s=Service(ChromeDriverManager().install())
 options = Options()
 options.add_argument('--headless')
@@ -55,14 +57,31 @@ print(descDiv.text)
 print("----")
 
 ## links in Description
-#for a in descDiv(soup.find("href"))
-#print("----")
+##for a in descDiv(soup.findall('href'))
+print("----")
+
 
 ## id video 
 id = soup.find("meta", {"itemprop" : "videoId"})
 print("ID:",id["content"])
+print("----")
+
+
+## coms
+#Commentaires
+commentaires = []
+element = driver.find_element(By.XPATH, "//*[@id=\"comments\"]")
+driver.execute_script("arguments[0].scrollIntoView();", element)
+soup = BeautifulSoup(driver.page_source, 'html.parser')
+commentsList = soup.find_all("ytd-comment-thread-renderer", {"class": "style-scope ytd-item-section-renderer"}, limit = N)
+while commentsList == []:
+    time.sleep(1)
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    commentsList = soup.find_all("ytd-comment-thread-renderer", {"class": "style-scope ytd-item-section-renderer"}, limit = N)
+for comment in commentsList:
+    commentaires.append(comment.find("yt-formatted-string", {"id": "content-text"}).text)
+print(commentaires)
+
 print('###')
-
-
 
 driver.quit()
